@@ -68,7 +68,7 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
   private static final String MOJANG_HASJOINED_URL =
       System.getProperty("mojang.sessionserver",
               "https://sessionserver.vimeworld.com/hasJoined")
-          .concat("?username=%s&serverId=%s&type=%s");
+          .concat("?username=%s&serverId=%s");
 
   private final VelocityServer server;
   private final MinecraftConnection mcConnection;
@@ -200,14 +200,16 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
 
       byte[] decryptedSharedSecret = decryptRsa(serverKeyPair, packet.getSharedSecret());
       String serverId = generateServerId(decryptedSharedSecret, serverKeyPair.getPublic());
-      String type = "unsafe";
 
       String playerIp = ((InetSocketAddress) mcConnection.getRemoteAddress()).getHostString();
       String url = String.format(MOJANG_HASJOINED_URL,
-          urlFormParameterEscaper().escape(login.getUsername()), serverId, type);
+          urlFormParameterEscaper().escape(login.getUsername()), serverId);
 
       if (server.getConfiguration().shouldPreventClientProxyConnections()) {
         url += "&ip=" + urlFormParameterEscaper().escape(playerIp);
+      }
+      if (mcConnection.getProtocolVersion() != ProtocolVersion.MINECRAFT_1_12_2) {
+        url += "&type=unsafe";
       }
 
       final HttpRequest httpRequest = HttpRequest.newBuilder()
